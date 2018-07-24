@@ -1,0 +1,11 @@
+/home/hrishi/Documents/Projects/dotnet/Encryptor/bin/Debug/netcoreapp2.0/Encryptor.deps.json
+/home/hrishi/Documents/Projects/dotnet/Encryptor/bin/Debug/netcoreapp2.0/Encryptor.runtimeconfig.json
+/home/hrishi/Documents/Projects/dotnet/Encryptor/bin/Debug/netcoreapp2.0/Encryptor.runtimeconfig.dev.json
+/home/hrishi/Documents/Projects/dotnet/Encryptor/bin/Debug/netcoreapp2.0/Encryptor.dll
+/home/hrishi/Documents/Projects/dotnet/Encryptor/bin/Debug/netcoreapp2.0/Encryptor.pdb
+/home/hrishi/Documents/Projects/dotnet/Encryptor/obj/Debug/netcoreapp2.0/Encryptor.csproj.CoreCompileInputs.cache
+/home/hrishi/Documents/Projects/dotnet/Encryptor/obj/Debug/netcoreapp2.0/Encryptor.AssemblyInfoInputs.cache
+/home/hrishi/Documents/Projects/dotnet/Encryptor/obj/Debug/netcoreapp2.0/Encryptor.AssemblyInfo.cs
+/home/hrishi/Documents/Projects/dotnet/Encryptor/obj/Debug/netcoreapp2.0/Encryptor.dll
+/home/hrishi/Documents/Projects/dotnet/Encryptor/obj/Debug/netcoreapp2.0/Encryptor.pdb
+/home/hrishi/Documents/Projects/dotnet/Encryptor/obj/Debug/netcoreapp2.0/Encryptor.csprojResolveAssemblyReference.cache
