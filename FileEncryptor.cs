@@ -10,11 +10,15 @@ namespace Encryptor
     public class FileEncryptor
     {
         private const bool OptionalAsymmetricEncryptionPadding = false;
-        public bool DecryptFile(string privateKeyFile,string inputFileName, string outputFileName)
+        public bool DecryptFile(string privateKeyFile,string inputFileName, string outputFileName, ParamNameConstantsEnum encpreference)
         {
             FileStream fs;
             StringBuilder sb ;
-            string outputkeyfileName = inputFileName + ".info";
+            string outputkeyfileName = inputFileName + ".info";;
+            if (encpreference==ParamNameConstantsEnum.Base64)
+            {
+                outputkeyfileName = outputkeyfileName.Replace(".base64","");
+            }
             try 
             {
                 using (fs = File.Open(privateKeyFile,FileMode.Open))
@@ -37,8 +41,8 @@ namespace Encryptor
                 byte[] keydata = Convert.FromBase64String(key);
                 RSACryptoServiceProvider rsa = new PemFileLoader().LoadPemPrivateKeyFile(keydata);
                 
-                Console.WriteLine(" File to decrypt " + inputFileName);
-                Console.WriteLine(" decrypted file" + outputFileName);
+                //Console.WriteLine(" File to decrypt " + inputFileName);
+                //Console.WriteLine(" decrypted file" + outputFileName);
                 if ((inputFileName!="") && (outputFileName!=""))
                 {
                     using (fs = File.Open(outputkeyfileName,FileMode.Open))
@@ -49,10 +53,30 @@ namespace Encryptor
                         reader.Close();
                         decryptedbuffer = rsa.Decrypt(outbuffer,RSAEncryptionPadding.Pkcs1);
                         SymmetricFileEncryptor flencryptor = new SymmetricFileEncryptor();
-                        flencryptor.DecryptData(inputFileName,outputFileName,decryptedbuffer);
-                        if (File.Exists(inputFileName + ".base64"))
+                        switch (encpreference)
                         {
-                            flencryptor.DecryptFromBase64EncodedFile(inputFileName + ".base64",outputFileName,decryptedbuffer);
+                            case ParamNameConstantsEnum.Base64:
+                                if (File.Exists (inputFileName))
+                                {
+                                    flencryptor.DecryptFromBase64EncodedFile(inputFileName,outputFileName,decryptedbuffer);
+                                }
+                                break;
+                            case ParamNameConstantsEnum.Binary:
+                                if (File.Exists(inputFileName))
+                                {
+                                    flencryptor.DecryptFile(inputFileName,outputFileName,decryptedbuffer);
+                                }
+                                break;
+                            default:
+                                if (File.Exists(inputFileName))
+                                {
+                                    flencryptor.DecryptFile(inputFileName,outputFileName,decryptedbuffer);
+                                }
+                                if (File.Exists(inputFileName + ".base64"))
+                                {
+                                     flencryptor.DecryptFromBase64EncodedFile(inputFileName,outputFileName + ".base64out",decryptedbuffer);
+                                }
+                                break;
                         }
                     }
                 }
@@ -69,7 +93,7 @@ namespace Encryptor
             return false;
         }
 
-        public bool EncryptFile (string publicKeyFile, string inputFileName, string outputFileName)
+        public bool EncryptFile (string publicKeyFile, string inputFileName, string outputFileName,ParamNameConstantsEnum encpreference)
         {
             FileStream fs;
             StringBuilder sb ;
@@ -101,7 +125,7 @@ namespace Encryptor
                 if ((inputFileName!="") && (outputFileName!=""))
                 {
                     SymmetricFileEncryptor flencryptor = new SymmetricFileEncryptor();
-                    byte[] data =  flencryptor.EncryptData(inputFileName,outputFileName);
+                    byte[] data =  flencryptor.EncryptFile(inputFileName,outputFileName);
                     byte[] plaintextbuffer;
                     using (FileStream fsout = File.Open(outputkeyfileName, FileMode.Create))
                     {
@@ -129,14 +153,14 @@ namespace Encryptor
 
         }
 
-        public bool PerformOperation (string keyfile, string inputFileName, string outputFileName, ParamNameConstantsEnum operation)
+        public bool PerformOperation (string keyfile, string inputFileName, string outputFileName, ParamNameConstantsEnum operation,ParamNameConstantsEnum encpreference)
         {
             switch (operation)
             {
                 case ParamNameConstantsEnum.Decrypt:
-                    return this.DecryptFile(keyfile,inputFileName,outputFileName);
+                    return this.DecryptFile(keyfile,inputFileName,outputFileName,encpreference);
                 case ParamNameConstantsEnum.Encrypt:
-                    return this.EncryptFile(keyfile,inputFileName,outputFileName);
+                    return this.EncryptFile(keyfile,inputFileName,outputFileName,encpreference);
                 default:
                     break;
             }

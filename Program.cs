@@ -12,6 +12,7 @@ namespace Encryptor
         static void Main(string[] args)
         {
             string keyfile = "", inputFileName = "", outputFileName = "";
+            ParamNameConstantsEnum encodingPreference = ParamNameConstantsEnum.Default;
             if (args==null || args.Length==0)
             {
                 Console.WriteLine("No Params provided");
@@ -80,6 +81,9 @@ namespace Encryptor
                                             argsreceived++;
                                         }
                                         break;
+                                    case ParamNameConstantsEnum pref when(pref == ParamNameConstantsEnum.Binary || pref ==ParamNameConstantsEnum.Base64):
+                                        encodingPreference = pref;
+                                        break;
                                 }
                             }
                             argcounter++;
@@ -98,7 +102,7 @@ namespace Encryptor
                     }
                     if (argsreceived==3)
                     {
-                        bool success = new FileEncryptor().PerformOperation(keyfile,inputFileName,outputFileName,optype);
+                        bool success = new FileEncryptor().PerformOperation(keyfile,inputFileName,outputFileName,optype,encodingPreference);
                         Console.WriteLine(" Operation was {0}", success? "Successful": "Unsuccessful");
                     }
                     break;

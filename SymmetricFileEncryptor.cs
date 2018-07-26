@@ -17,7 +17,7 @@ public class SymmetricFileEncryptor
     private const int buffersize = 1024;
     private const int base64buffersize = 24;
 
-    public byte[] EncryptData(string inputFileName, string outputFileName)
+    public byte[] EncryptFile(string inputFileName, string outputFileName)
     {
         StringBuilder sb = new StringBuilder();
         byte[] key;
@@ -50,6 +50,7 @@ public class SymmetricFileEncryptor
             cryptostream.Write(data,0,finalblocksize);
             cryptostream.FlushFinalBlock();
             memstream.Flush();
+            
             this.WriteStreamToBase64EncodedFile(memstream,outputFileName + ".base64");
             File.WriteAllBytes(outputFileName,memstream.ToArray());
             cryptostream.Close();
@@ -94,7 +95,7 @@ public class SymmetricFileEncryptor
     }
 
 
-    public void DecryptData(string inputFileName, string outputFileName, byte[] key)
+    public void DecryptFile(string inputFileName, string outputFileName, byte[] key)
     {
         StringBuilder sb = new StringBuilder();
         sb.Append(this.GetString(key));
@@ -161,7 +162,7 @@ public class SymmetricFileEncryptor
         symmetriccryptostream.Write(data,0,finalblocksize);
         symmetriccryptostream.Flush();
         output.Flush();
-        File.WriteAllBytes(outputFileName + ".base64out",output.ToArray());
+        File.WriteAllBytes(outputFileName,output.ToArray());
         symmetriccryptostream.Close();
 
     }
