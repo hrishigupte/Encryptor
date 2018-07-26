@@ -17,6 +17,10 @@ namespace Encryptor
             {
                 Console.WriteLine("No Params provided");
             }
+            foreach(string s in args)
+            {
+                Console.WriteLine(s);
+            }
             
             ParamNameConstantsEnum optype = ParamNameConstants.GetParamType(args[0]);
             switch (optype)
