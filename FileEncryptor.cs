@@ -38,19 +38,22 @@ namespace Encryptor
                 RSACryptoServiceProvider rsa = new PemFileLoader().LoadPemPrivateKeyFile(keydata);
                 
                 Console.WriteLine(" File to decrypt " + inputFileName);
-                Console.WriteLine(" File to be decrypted " + outputFileName);
+                Console.WriteLine(" decrypted file" + outputFileName);
                 if ((inputFileName!="") && (outputFileName!=""))
                 {
                     using (fs = File.Open(outputkeyfileName,FileMode.Open))
                     {
                         byte[] decryptedbuffer;
-                        int currentoffset =0;//,currentdecryptedoffset = 0;
-                        byte[] outbuffer = new byte[fs.Length];
-                        fs.Read(outbuffer,currentoffset,(int)fs.Length);
+                        StreamReader reader = new StreamReader(fs);
+                        byte[] outbuffer = Convert.FromBase64String(reader.ReadToEnd());
+                        reader.Close();
                         decryptedbuffer = rsa.Decrypt(outbuffer,RSAEncryptionPadding.Pkcs1);
                         SymmetricFileEncryptor flencryptor = new SymmetricFileEncryptor();
                         flencryptor.DecryptData(inputFileName,outputFileName,decryptedbuffer);
-
+                        if (File.Exists(inputFileName + ".base64"))
+                        {
+                            flencryptor.DecryptFromBase64EncodedFile(inputFileName + ".base64",outputFileName,decryptedbuffer);
+                        }
                     }
                 }
                 return true;
@@ -103,7 +106,11 @@ namespace Encryptor
                     using (FileStream fsout = File.Open(outputkeyfileName, FileMode.Create))
                     {
                         plaintextbuffer = rsa.Encrypt(data,RSAEncryptionPadding.Pkcs1);
-                        fsout.Write(plaintextbuffer,0,plaintextbuffer.Length);
+                        //fsout.Write(plaintextbuffer,0,plaintextbuffer.Length);
+                        StreamWriter writer = new StreamWriter(fsout);
+                        writer.Write(Convert.ToBase64String(plaintextbuffer));
+                        writer.Flush();
+                        writer.Close();
                         fsout.Close();
                     }
 

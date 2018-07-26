@@ -15,6 +15,7 @@ public class SymmetricFileEncryptor
     private const int saltsize = 16;
 
     private const int buffersize = 1024;
+    private const int base64buffersize = 24;
 
     public byte[] EncryptData(string inputFileName, string outputFileName)
     {
@@ -54,7 +55,8 @@ public class SymmetricFileEncryptor
             cryptostream.Close();
             memstream.Close();
             sb.Append(this.GetString(key));
-            //Console.WriteLine(sb.ToString());
+            /* Console.WriteLine(sb.ToString());
+            Console.WriteLine(Convert.ToBase64String(key)); */
         }
         return key;
     }
@@ -64,17 +66,9 @@ public class SymmetricFileEncryptor
         {
             StreamWriter writer = new StreamWriter(fso);
             byte[] data;
-            int totalblocks = (int)input.Length/buffersize;
-            int finalblocksize = (int)input.Length % buffersize;
-            for (int i =0; i< totalblocks;i++)
-            {
-                data =new byte[buffersize];
-                input.Read(data,0,buffersize);
-                writer.Write(Convert.ToBase64String(data));
-            }
-            data = new byte[finalblocksize];
-            input.Read(data, 0,finalblocksize);
-            writer.Write(Convert.ToBase64String(data));
+            StringBuilder base64data = new StringBuilder();
+            base64data.Append(Convert.ToBase64String(input.ToArray()));
+            writer.Write(base64data.ToString());
             writer.Close();
             fso.Close();
         }
@@ -83,20 +77,18 @@ public class SymmetricFileEncryptor
 
     public MemoryStream ReadStreamFromBase64EncodedFile(string inputFileName)
     {
-        StreamWriter writer;
-        MemoryStream output = new MemoryStream();
+        StreamReader reader;
+        MemoryStream output;
+        StringBuilder sb = new StringBuilder();
         byte[] data;
         using (FileStream fsi = File.Open(inputFileName,FileMode.Open))
         {
-            writer = new StreamWriter(output);
-            int totalblocks = (int)fsi.Length/buffersize;
-            int finalblocksize = (int)fsi.Length % buffersize;
-            for (int i=0; i<totalblocks;i++)
-            {
-                data = new byte[buffersize];
-                fsi.Read(data,i*buffersize,buffersize);
-                //writer.Write(Convert.FromBase64CharArray(data));
-            }
+            reader = new StreamReader(fsi);
+            sb.Append(reader.ReadToEnd());
+            reader.Close();
+            data = Convert.FromBase64String(sb.ToString());
+            output = new MemoryStream(data);
+            fsi.Close();
         }
         return output;
     }
@@ -132,8 +124,45 @@ public class SymmetricFileEncryptor
             symmetriccryptostream.Write(data,0,finalblocksize);
             symmetriccryptostream.FlushFinalBlock();
             output.Flush();
-            File.WriteAllBytes(outputFileName,output.ToArray());            
+            File.WriteAllBytes(outputFileName,output.ToArray()); 
+            output.Close();
+            symmetriccryptostream.Close();
+            fs.Close();
+
         }
+       
+
+    }
+
+    public void DecryptFromBase64EncodedFile(string inputFileName, string outputFileName, byte[] key)
+    {
+        RijndaelManaged symmetrickey = new RijndaelManaged();
+        symmetrickey.Key = key;
+        symmetrickey.IV = Encoding.ASCII.GetBytes(initvector);
+
+        ICryptoTransform crypto = symmetrickey.CreateDecryptor();
+        MemoryStream output = new MemoryStream();
+        CryptoStream symmetriccryptostream  = new CryptoStream(output,crypto,CryptoStreamMode.Write);
+        
+        symmetriccryptostream = new CryptoStream(output,crypto,CryptoStreamMode.Write);
+        
+        byte[] data;
+        MemoryStream input = this.ReadStreamFromBase64EncodedFile(inputFileName);
+        int totalblocks = (int)input.Length/buffersize;
+        int finalblocksize = (int)input.Length % buffersize;
+        for (int i=0; i< totalblocks;i++)
+        {
+            data = new byte[buffersize];
+            input.Read(data,0,buffersize);
+            symmetriccryptostream.Write(data,0,buffersize);
+        }
+        data = new byte[finalblocksize];
+        input.Read(data,0,finalblocksize);
+        symmetriccryptostream.Write(data,0,finalblocksize);
+        symmetriccryptostream.Flush();
+        output.Flush();
+        File.WriteAllBytes(outputFileName + ".base64out",output.ToArray());
+        symmetriccryptostream.Close();
 
     }
     private string GetString(byte[] keyvalue)
