@@ -9,11 +9,12 @@ namespace Encryptor
 {
     public class FileEncryptor
     {
-    
+        private const bool OptionalAsymmetricEncryptionPadding = false;
         public bool DecryptFile(string privateKeyFile,string inputFileName, string outputFileName)
         {
             FileStream fs;
             StringBuilder sb ;
+            string outputkeyfileName = inputFileName + ".info";
             try 
             {
                 using (fs = File.Open(privateKeyFile,FileMode.Open))
@@ -27,33 +28,28 @@ namespace Encryptor
                 string pemkey = sb.ToString();
                 int startkeyphraseindex = pemkey.IndexOf(KeyPhraseConstants.PrivateKeyStart,0);
                 int keystartindex = startkeyphraseindex + KeyPhraseConstants.PrivateKeyStart.Length;
-
-                //Console.WriteLine(startkeyphraseindex);
                 int endkeyphraseindex = pemkey.IndexOf(KeyPhraseConstants.PrivateKeyEnd,0);
-                //Console.WriteLine(endkeyphraseindex);
                 string key = pemkey.Substring(keystartindex,pemkey.Length - (keystartindex+1) - (pemkey.Length-endkeyphraseindex-1));
                 sb = new StringBuilder();
-                //Console.WriteLine(key);
                 sb.Append(key.Replace("\r",""));
                 sb.Replace("\n","");
                 key = sb.ToString().Trim();
                 byte[] keydata = Convert.FromBase64String(key);
                 RSACryptoServiceProvider rsa = new PemFileLoader().LoadPemPrivateKeyFile(keydata);
+                
                 Console.WriteLine(" File to decrypt " + inputFileName);
                 Console.WriteLine(" File to be decrypted " + outputFileName);
                 if ((inputFileName!="") && (outputFileName!=""))
                 {
-                    using (fs = File.Open(inputFileName,FileMode.Open))
+                    using (fs = File.Open(outputkeyfileName,FileMode.Open))
                     {
                         byte[] decryptedbuffer;
-                        using (FileStream fsout = File.Open(outputFileName, FileMode.Create))
-                        {
-                            int currentoffset =0,currentdecryptedoffset = 0;
-                            byte[] outbuffer = new byte[fs.Length];
-                            fs.Read(outbuffer,currentoffset,(int)fs.Length);
-                            decryptedbuffer = rsa.Decrypt(outbuffer,RSAEncryptionPadding.Pkcs1);
-                            fsout.Write(decryptedbuffer,currentdecryptedoffset,decryptedbuffer.Length);
-                        }
+                        int currentoffset =0;//,currentdecryptedoffset = 0;
+                        byte[] outbuffer = new byte[fs.Length];
+                        fs.Read(outbuffer,currentoffset,(int)fs.Length);
+                        decryptedbuffer = rsa.Decrypt(outbuffer,RSAEncryptionPadding.Pkcs1);
+                        SymmetricFileEncryptor flencryptor = new SymmetricFileEncryptor();
+                        flencryptor.DecryptData(inputFileName,outputFileName,decryptedbuffer);
 
                     }
                 }
@@ -72,8 +68,9 @@ namespace Encryptor
 
         public bool EncryptFile (string publicKeyFile, string inputFileName, string outputFileName)
         {
-                FileStream fs;
+            FileStream fs;
             StringBuilder sb ;
+            string outputkeyfileName = outputFileName + ".info";
             try 
             {
                 using (fs = File.Open(publicKeyFile,FileMode.Open))
@@ -88,12 +85,9 @@ namespace Encryptor
                 int startkeyphraseindex = pemkey.IndexOf(KeyPhraseConstants.PublicKeyStart,0);
                 int keystartindex = startkeyphraseindex + KeyPhraseConstants.PublicKeyStart.Length;
 
-                //Console.WriteLine(startkeyphraseindex);
                 int endkeyphraseindex = pemkey.IndexOf(KeyPhraseConstants.PublicKeyEnd,0);
-                //Console.WriteLine(endkeyphraseindex);
                 string key = pemkey.Substring(keystartindex,pemkey.Length - (keystartindex+1) - (pemkey.Length-endkeyphraseindex-1));
                 sb = new StringBuilder();
-                //Console.WriteLine(key);
                 sb.Append(key.Replace("\r",""));
                 sb.Replace("\n","");
                 key = sb.ToString().Trim();
@@ -103,19 +97,16 @@ namespace Encryptor
                 Console.WriteLine(" Output File " + outputFileName);
                 if ((inputFileName!="") && (outputFileName!=""))
                 {
-                    using (fs = File.Open(inputFileName,FileMode.Open))
+                    SymmetricFileEncryptor flencryptor = new SymmetricFileEncryptor();
+                    byte[] data =  flencryptor.EncryptData(inputFileName,outputFileName);
+                    byte[] plaintextbuffer;
+                    using (FileStream fsout = File.Open(outputkeyfileName, FileMode.Create))
                     {
-                        byte[] decryptedbuffer;
-                        using (FileStream fsout = File.Open(outputFileName, FileMode.Create))
-                        {
-                            int currentoffset =0,currentdecryptedoffset = 0;
-                            byte[] outbuffer = new byte[fs.Length];
-                            fs.Read(outbuffer,currentoffset,(int)fs.Length);
-                            decryptedbuffer = rsa.Encrypt(outbuffer,RSAEncryptionPadding.Pkcs1);
-                            fsout.Write(decryptedbuffer,currentdecryptedoffset,decryptedbuffer.Length);
-                        }
-
+                        plaintextbuffer = rsa.Encrypt(data,RSAEncryptionPadding.Pkcs1);
+                        fsout.Write(plaintextbuffer,0,plaintextbuffer.Length);
+                        fsout.Close();
                     }
+
                 }
                 return true;
             }
@@ -143,6 +134,33 @@ namespace Encryptor
                     break;
             }
             return false;
+        }
+        private int GetMaxDataSize(int keySize)
+        {
+            if (OptionalAsymmetricEncryptionPadding)
+            {
+                return ((keySize - 384)/8) + 7;
+            }
+            else 
+            {
+                return ((keySize - 384)/8) + 37;
+            }
+        }
+
+        private string GetString (byte[] keydata)
+        {
+            char[] chars = new char[keydata.Length/sizeof(char)];
+            System.Buffer.BlockCopy(keydata,0,chars,0,keydata.Length);
+            return new String(chars);
+        }
+
+        private byte[] GetBytes (string keydata)
+        {
+            char[] chars = keydata.ToCharArray();
+            byte[] password = new byte[keydata.Length * sizeof(char)];
+            System.Buffer.BlockCopy(chars,0,password,0,chars.Length);
+            return password;
+
         }
     }
 }
