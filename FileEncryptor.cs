@@ -74,7 +74,7 @@ namespace Encryptor
                                 }
                                 if (File.Exists(inputFileName + ".base64"))
                                 {
-                                     flencryptor.DecryptFromBase64EncodedFile(inputFileName,outputFileName + ".base64out",decryptedbuffer);
+                                     flencryptor.DecryptFromBase64EncodedFile(inputFileName +".base64",outputFileName + ".base64out",decryptedbuffer);
                                 }
                                 break;
                         }

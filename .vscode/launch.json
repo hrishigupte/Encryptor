@@ -19,7 +19,8 @@
             // If you have changed target frameworks, make sure to update the program path.
             "program": "${workspaceFolder}/bin/Debug/netcoreapp2.0/Encryptor.dll",
             //"args": ["--e","--k","/media/hrishi/62A0-DBBC/Encryptor/hrishi2.pub","--o","/home/hrishi/out1.txt","--i","/home/hrishi/Documents/encrypt.jpg","--base64"],
-           "args": ["--d","--base64","--k","/media/hrishi/62A0-DBBC/Encryptor/hrishi2.pem","--i","/home/hrishi/out1.txt.base64","--o","/home/hrishi/Documents/decrypt.jpg"],
+           //"args": ["--d","--base64","--k","/media/hrishi/62A0-DBBC/Encryptor/hrishi2.pem","--i","/home/hrishi/out1.txt.base64","--o","/home/hrishi/Documents/decrypt.jpg"],
+           "args": ["--d","--k","/media/hrishi/62A0-DBBC/Encryptor/hrishi2.pem","--i","/media/hrishi/62A0-DBBC/sample/Form 1099-SA-Hrishikesh-Gupte.pdf.enc","--o","/home/hrishi/Documents/Form 1099-SA-Hrishikesh-Gupte.pdf"],
             "cwd": "${workspaceFolder}",
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
             "console": "internalConsole",
