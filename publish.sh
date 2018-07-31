@@ -1,4 +1,5 @@
 #!/bin/bash
+rm -rf obj/*
 rm -rf ~/.local/share/Trash/files/*
 rm -rf bin/Release/netcoreapp2.0/*
 dotnet publish -c Release --self-contained -r ubuntu.16.04-x64

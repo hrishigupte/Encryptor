@@ -14,7 +14,7 @@ public class SymmetricFileEncryptor
     private const int passworditerations = 10;
     private const int saltsize = 16;
 
-    private const int buffersize = 1024;
+    private const int buffersize = 2048;
     private const int base64buffersize = 24;
 
     public byte[] EncryptFile(string inputFileName, string outputFileName)
@@ -47,13 +47,15 @@ public class SymmetricFileEncryptor
                 cryptostream.Write(data,0,buffersize);
             }
             data = new byte[finalblocksize];
+            fs.Read(data,0,finalblocksize);
             cryptostream.Write(data,0,finalblocksize);
             cryptostream.FlushFinalBlock();
+            cryptostream.Flush();
             memstream.Flush();
-            
-            this.WriteStreamToBase64EncodedFile(memstream,outputFileName + ".base64");
-            File.WriteAllBytes(outputFileName,memstream.ToArray());
             cryptostream.Close();
+            File.WriteAllBytes(outputFileName,memstream.ToArray());
+            this.WriteStreamToBase64EncodedFile(memstream,outputFileName + ".base64");
+            //File.WriteAllBytes(outputFileName,memstream.ToArray());
             memstream.Close();
             sb.Append(this.GetString(key));
             /* Console.WriteLine(sb.ToString());
@@ -66,10 +68,10 @@ public class SymmetricFileEncryptor
         using (FileStream fso = File.Open(outputFileName,FileMode.Create))
         {
             StreamWriter writer = new StreamWriter(fso);
-            byte[] data;
             StringBuilder base64data = new StringBuilder();
             base64data.Append(Convert.ToBase64String(input.ToArray()));
             writer.Write(base64data.ToString());
+            writer.Flush();
             writer.Close();
             fso.Close();
         }
@@ -120,14 +122,15 @@ public class SymmetricFileEncryptor
                 fs.Read(data,0,buffersize);
                 symmetriccryptostream.Write(data,0,buffersize);
             }
-            data = new byte[finalblocksize];
-            fs.Read(data,0,finalblocksize);
-            symmetriccryptostream.Write(data,0,finalblocksize);
+            byte [] finaldata = new byte[finalblocksize];
+            fs.Read(finaldata,0,finalblocksize);
+            symmetriccryptostream.Write(finaldata,0,finalblocksize);
             symmetriccryptostream.FlushFinalBlock();
+            //symmetriccryptostream.Flush();
+            symmetriccryptostream.Close();
             output.Flush();
             File.WriteAllBytes(outputFileName,output.ToArray()); 
             output.Close();
-            symmetriccryptostream.Close();
             fs.Close();
 
         }
@@ -160,10 +163,12 @@ public class SymmetricFileEncryptor
         data = new byte[finalblocksize];
         input.Read(data,0,finalblocksize);
         symmetriccryptostream.Write(data,0,finalblocksize);
+        symmetriccryptostream.FlushFinalBlock();
         symmetriccryptostream.Flush();
+        symmetriccryptostream.Close();
         output.Flush();
         File.WriteAllBytes(outputFileName,output.ToArray());
-        symmetriccryptostream.Close();
+        
 
     }
     private string GetString(byte[] keyvalue)
