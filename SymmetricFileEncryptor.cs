@@ -9,10 +9,14 @@ public class SymmetricFileEncryptor
 {
     private const bool optionencryptionsymmetricpadding = false;
     private const string passphrase = "wswvw@28m";
+    private const string passphrasealphabet = "abcdefghijklmnopqrstuvwxyz1234567890";
+    private const int passphrasesize = 8; //size in bytes
     private const string initvector = "@@epx2rvuw##$&*!";
-    private const int keysize = 256;
+    private const string initvectoralphabet = "@$&*!abcdefghijklmnopqrstuvwxyz1234567890";
+    private const int initvectorsize = 16; //size in bytes
+    private const int keysize = 256; //size in bits
     private const int passworditerations = 10;
-    private const int saltsize = 16;
+    private const int saltsize = 16; //size in bytes
 
     private const int buffersize = 2048;
     private const int base64buffersize = 24;
@@ -21,17 +25,20 @@ public class SymmetricFileEncryptor
     {
         StringBuilder sb = new StringBuilder();
         byte[] key;
+        string pwd, iv;
         using (FileStream fs = File.Open(inputFileName,FileMode.Open))
         {
             byte[] salt = this.GetRandomSalt(saltsize);
+            pwd = Nanoid.Nanoid.Generate(passphrasealphabet,passphrasesize);
 
-            Rfc2898DeriveBytes password = new Rfc2898DeriveBytes(passphrase,salt);
+            Rfc2898DeriveBytes password = new Rfc2898DeriveBytes(pwd,salt);
 
             RijndaelManaged symmetrickey = new RijndaelManaged();
             key = password.GetBytes(keysize/8);
             symmetrickey.Key = key;
             symmetrickey.Mode = CipherMode.CBC;
-            symmetrickey.IV = Encoding.ASCII.GetBytes(initvector);
+            iv = Nanoid.Nanoid.Generate(initvectoralphabet,initvectorsize);
+            symmetrickey.IV = Encoding.ASCII.GetBytes(iv);
 
             ICryptoTransform crypto = symmetrickey.CreateEncryptor();
             
@@ -55,13 +62,14 @@ public class SymmetricFileEncryptor
             cryptostream.Close();
             File.WriteAllBytes(outputFileName,memstream.ToArray());
             this.WriteStreamToBase64EncodedFile(memstream,outputFileName + ".base64");
-            //File.WriteAllBytes(outputFileName,memstream.ToArray());
             memstream.Close();
             sb.Append(this.GetString(key));
-            /* Console.WriteLine(sb.ToString());
-            Console.WriteLine(Convert.ToBase64String(key)); */
         }
-        return key;
+        byte [] keyiv = new byte[key.Length + iv.Length];
+        System.Buffer.BlockCopy(key,0,keyiv,0,key.Length);
+        byte[] ivbt = Encoding.ASCII.GetBytes(iv);
+        System.Buffer.BlockCopy(ivbt,0,keyiv,key.Length,ivbt.Length);
+        return keyiv;
     }
     public bool WriteStreamToBase64EncodedFile(MemoryStream input, string outputFileName)
     {
@@ -101,11 +109,7 @@ public class SymmetricFileEncryptor
     {
         StringBuilder sb = new StringBuilder();
         sb.Append(this.GetString(key));
-        //Console.WriteLine(sb.ToString());
-        RijndaelManaged symmetrickey = new RijndaelManaged();
-        symmetrickey.Key = key;
-        symmetrickey.IV = Encoding.ASCII.GetBytes(initvector);
-
+        RijndaelManaged symmetrickey = this.Configurekey(key);
         ICryptoTransform crypto = symmetrickey.CreateDecryptor();
         MemoryStream output = new MemoryStream();
         CryptoStream symmetriccryptostream  = new CryptoStream(output,crypto,CryptoStreamMode.Write);
@@ -126,24 +130,17 @@ public class SymmetricFileEncryptor
             fs.Read(finaldata,0,finalblocksize);
             symmetriccryptostream.Write(finaldata,0,finalblocksize);
             symmetriccryptostream.FlushFinalBlock();
-            //symmetriccryptostream.Flush();
             symmetriccryptostream.Close();
             output.Flush();
             File.WriteAllBytes(outputFileName,output.ToArray()); 
             output.Close();
             fs.Close();
-
         }
-       
-
     }
 
     public void DecryptFromBase64EncodedFile(string inputFileName, string outputFileName, byte[] key)
     {
-        RijndaelManaged symmetrickey = new RijndaelManaged();
-        symmetrickey.Key = key;
-        symmetrickey.IV = Encoding.ASCII.GetBytes(initvector);
-
+        RijndaelManaged symmetrickey = this.Configurekey(key);
         ICryptoTransform crypto = symmetrickey.CreateDecryptor();
         MemoryStream output = new MemoryStream();
         CryptoStream symmetriccryptostream  = new CryptoStream(output,crypto,CryptoStreamMode.Write);
@@ -168,8 +165,6 @@ public class SymmetricFileEncryptor
         symmetriccryptostream.Close();
         output.Flush();
         File.WriteAllBytes(outputFileName,output.ToArray());
-        
-
     }
     private string GetString(byte[] keyvalue)
     {
@@ -200,8 +195,23 @@ public class SymmetricFileEncryptor
         return random;
     }
 
-
-
-
-
+    private RijndaelManaged Configurekey(byte[] symkey)
+    {
+        RijndaelManaged symmetrickey = new RijndaelManaged();
+        if (symkey.Length>32)
+        {
+            byte[] skey = new byte[keysize/8];
+            Buffer.BlockCopy(symkey,0,skey,0,skey.Length);
+            byte[] iv = new byte[initvectorsize];
+            Buffer.BlockCopy(symkey,skey.Length,iv,0,iv.Length);
+            symmetrickey.Key = skey;
+            symmetrickey.IV = iv;
+        }
+        else 
+        {
+            symmetrickey.Key = symkey;
+            symmetrickey.IV = Encoding.ASCII.GetBytes(initvector);
+        }
+        return symmetrickey;
+    }
 }
