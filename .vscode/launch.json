@@ -14,7 +14,6 @@
             "program": "${workspaceFolder}/bin/Debug/netcoreapp5.0/Encryptor.dll",
            //"args": ["--e","--k","/tmp/dummy.pub","--i","/tmp/hello.txt","--o","/tmp/hello.txt.enc"],
            //"args": ["--d","--k","/tmp/dummy.pem","--privatekeypassword","dummy","--i","/tmp/hello.txt.enc","--o","/tmp/hello1.txt"],
-           "args": ["--d","--k","/media/hrishi/WORKDRIVE/Encryptor/hrishi2.pem","--i","/media/hrishi/WORKDRIVE/hrishi/test/Shamika_Sule_I94_2017.pdf.enc", "--o" ,"/media/hrishi/WORKDRIVE/hrishi/test/Shamika_Sule_I94_2017.pdf"],
            //"args": ["--help"],
             "cwd": "${workspaceFolder}",    
             // For more information about the 'console' field, see https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md#console-terminal-window
