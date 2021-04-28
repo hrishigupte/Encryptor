@@ -39,7 +39,7 @@ namespace Encryptor
                 string pemkey = sb.ToString();
 
                 int encryptedkeyindex = pemkey.IndexOf(KeyPhraseConstants.PrivateKeyEncryptionInfo,0);
-                if (encryptedkeyindex !=0)
+                if (encryptedkeyindex >=0)
                 {
                     using (MemoryStream memrd = new MemoryStream())
                     {
