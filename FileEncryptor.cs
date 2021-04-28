@@ -4,16 +4,23 @@ using System.Text;
 using System.Security.Cryptography;
 using Encryptor.Data;
 using Encryptor.Util;
+using Encryptor.Exceptions;
+using Org.BouncyCastle.OpenSsl;
+using Org.BouncyCastle.Security;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Parameters;
 
 namespace Encryptor
 {
     public class FileEncryptor
     {
-        private const bool OptionalAsymmetricEncryptionPadding = false;
+        private const bool optionalAsymmetricEncryptionPadding = false;
+        private string privateKeyEncryptionpassword="";
         public bool DecryptFile(string privateKeyFile,string inputFileName, string outputFileName, ParamNameConstantsEnum encpreference)
         {
             FileStream fs;
             StringBuilder sb ;
+            RSACryptoServiceProvider rsa;
             string outputkeyfileName = inputFileName + ".info";;
             if (encpreference==ParamNameConstantsEnum.Base64)
             {
@@ -30,17 +37,46 @@ namespace Encryptor
 
                 }
                 string pemkey = sb.ToString();
-                int startkeyphraseindex = pemkey.IndexOf(KeyPhraseConstants.PrivateKeyStart,0);
-                int keystartindex = startkeyphraseindex + KeyPhraseConstants.PrivateKeyStart.Length;
-                int endkeyphraseindex = pemkey.IndexOf(KeyPhraseConstants.PrivateKeyEnd,0);
-                string key = pemkey.Substring(keystartindex,pemkey.Length - (keystartindex+1) - (pemkey.Length-endkeyphraseindex-1));
-                sb = new StringBuilder();
-                sb.Append(key.Replace("\r",""));
-                sb.Replace("\n","");
-                key = sb.ToString().Trim();
-                byte[] keydata = Convert.FromBase64String(key);
-                RSACryptoServiceProvider rsa = new PemFileLoader().LoadPemPrivateKeyFile(keydata);
-                
+
+                int encryptedkeyindex = pemkey.IndexOf(KeyPhraseConstants.PrivateKeyEncryptionInfo,0);
+                if (encryptedkeyindex !=0)
+                {
+                    using (MemoryStream memrd = new MemoryStream())
+                    {
+                        StreamWriter wr = new StreamWriter(memrd);
+                        wr.Write(sb.ToString());
+                        wr.Flush();
+                        //wr.Close();
+                        memrd.Position=0;
+                        StreamReader rd = new StreamReader(memrd);
+                        if (string.IsNullOrEmpty(this.privateKeyEncryptionpassword.Trim()))
+                        {
+                            throw new PasswordNotSuppliedException("Private key is encrypted...Password for Decrypting private key not provided");
+                        }
+                        PemReader pemreader= new PemReader(rd,new PemPasswordFinder(privateKeyEncryptionpassword));
+                        AsymmetricCipherKeyPair keyPair = (AsymmetricCipherKeyPair) pemreader.ReadObject();
+                        RsaPrivateCrtKeyParameters rsaparams  = (RsaPrivateCrtKeyParameters) keyPair.Private;
+                        RSAParameters rsp = DotNetUtilities.ToRSAParameters(rsaparams);
+                        rsa = new RSACryptoServiceProvider();
+                        rsa.ImportParameters(rsp);
+                        rd.Close();
+                        wr.Close();
+                        memrd.Close();
+                    }
+                }
+                else 
+                {
+                    int startkeyphraseindex = pemkey.IndexOf(KeyPhraseConstants.PrivateKeyStart,0);
+                    int keystartindex = startkeyphraseindex + KeyPhraseConstants.PrivateKeyStart.Length;
+                    int endkeyphraseindex = pemkey.IndexOf(KeyPhraseConstants.PrivateKeyEnd,0);
+                    string key = pemkey.Substring(keystartindex,pemkey.Length - (keystartindex+1) - (pemkey.Length-endkeyphraseindex-1));
+                    sb = new StringBuilder();
+                    sb.Append(key.Replace("\r",""));
+                    sb.Replace("\n","");
+                    key = sb.ToString().Trim();
+                    byte[] keydata = Convert.FromBase64String(key);
+                    rsa = new PemFileLoader().LoadPemPrivateKeyFile(keydata);
+                }
                 //Console.WriteLine(" File to decrypt " + inputFileName);
                 //Console.WriteLine(" decrypted file" + outputFileName);
                 if ((inputFileName!="") && (outputFileName!=""))
@@ -85,6 +121,10 @@ namespace Encryptor
             catch (FileNotFoundException fex)
             {
                 Console.WriteLine("COuld not find key file " + fex.ToString());
+            }
+            catch (PasswordNotSuppliedException pex)
+            {
+                Console.WriteLine("Could not decrypt private key to decrypt file : " + pex.ToString());
             }
             catch (Exception ex)
             {
@@ -168,7 +208,7 @@ namespace Encryptor
         }
         private int GetMaxDataSize(int keySize)
         {
-            if (OptionalAsymmetricEncryptionPadding)
+            if (optionalAsymmetricEncryptionPadding)
             {
                 return ((keySize - 384)/8) + 7;
             }
@@ -191,6 +231,19 @@ namespace Encryptor
             byte[] password = new byte[keydata.Length * sizeof(char)];
             System.Buffer.BlockCopy(chars,0,password,0,chars.Length);
             return password;
+
+        }
+
+        public string PrivateKeyEncryptionpassword 
+        {
+            get 
+            {
+                return this.privateKeyEncryptionpassword;
+            }
+            set 
+            {
+                this.privateKeyEncryptionpassword = value;
+            }
 
         }
     }
