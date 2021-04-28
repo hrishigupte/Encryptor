@@ -24,7 +24,7 @@ namespace Encryptor
                 Console.WriteLine("[Operation] --i [InputFile] --o [OutputFile] --k [KeyFile]");
                 Console.WriteLine("[Operation]--d to Decrypt File --e to Encrypt File");
                 Console.WriteLine("Optional Parameters");
-                Console.WriteLine("Optional Paramter to be used to specify encryption file format --base64 if the application should output encrypted file in base64 format only")
+                Console.WriteLine("Optional Paramter to be used to specify encryption file format --base64 if the application should output encrypted file in base64 format only");
                 Console.WriteLine("Optional parameter to be used with Decryption Operation for encrypted Private Key --privatekeypassword [Private Key Password]");
                 return;
             }
