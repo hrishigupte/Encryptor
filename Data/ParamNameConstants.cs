@@ -13,6 +13,7 @@ namespace Encryptor.Data
         Base64 = 6,
         Binary = 7,
         Default = 8,
+        PrivateKeyDecryptionPassword=9,
         Unknown = 10
 
 
@@ -37,6 +38,8 @@ namespace Encryptor.Data
                     return ParamNameConstantsEnum.Base64;
                 case "--binary":
                     return ParamNameConstantsEnum.Binary;
+                case "--privatekeypassword":
+                    return ParamNameConstantsEnum.PrivateKeyDecryptionPassword;
                 default:
                     return ParamNameConstantsEnum.Unknown;
             }

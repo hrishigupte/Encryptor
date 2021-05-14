@@ -7,6 +7,7 @@ namespace Encryptor.Data
 
         public static readonly string PublicKeyStart = "-----BEGIN PUBLIC KEY-----";
         public static readonly string PublicKeyEnd = "-----END PUBLIC KEY-----";
+        public static readonly string PrivateKeyEncryptionInfo="Proc-Type: 4,ENCRYPTED";
 
     }
 

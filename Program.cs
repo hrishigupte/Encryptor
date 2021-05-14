@@ -11,11 +11,22 @@ namespace Encryptor
     {
         static void Main(string[] args)
         {
-            string keyfile = "", inputFileName = "", outputFileName = "";
+            string keyfile = "", inputFileName = "", outputFileName = "", keypassword="";
             ParamNameConstantsEnum encodingPreference = ParamNameConstantsEnum.Default;
             if (args==null || args.Length==0)
             {
                 Console.WriteLine("No Params provided");
+                Console.WriteLine("--help for Help");
+                return;
+            }
+            if (args[0].Trim()=="--help")
+            {
+                Console.WriteLine("[Operation] --i [InputFile] --o [OutputFile] --k [KeyFile]");
+                Console.WriteLine("[Operation]--d to Decrypt File --e to Encrypt File");
+                Console.WriteLine("Optional Parameters");
+                Console.WriteLine("Optional Paramter to be used to specify encryption file format --base64 if the application should output encrypted file in base64 format only");
+                Console.WriteLine("Optional parameter to be used with Decryption Operation for encrypted Private Key --privatekeypassword [Private Key Password]");
+                return;
             }
             foreach(string s in args)
             {
@@ -85,6 +96,18 @@ namespace Encryptor
                                             argsreceived++;
                                         }
                                         break;
+                                    case ParamNameConstantsEnum.PrivateKeyDecryptionPassword:
+                                        argcounter++;
+                                        if (String.IsNullOrEmpty(args[argcounter]))
+                                        {
+                                            Console.WriteLine("Private key password not specified");
+                                            throw new ArgumentNullException("Private key password not specified");
+                                        }
+                                        else
+                                        {
+                                            keypassword = args[argcounter];
+                                        }
+                                        break;
                                     case ParamNameConstantsEnum pref when(pref == ParamNameConstantsEnum.Binary || pref ==ParamNameConstantsEnum.Base64):
                                         encodingPreference = pref;
                                         break;
@@ -106,8 +129,12 @@ namespace Encryptor
                     }
                     if (argsreceived==3)
                     {
-                        bool success = new FileEncryptor().PerformOperation(keyfile,inputFileName,outputFileName,optype,encodingPreference);
+                        bool success = new FileEncryptor(){PrivateKeyEncryptionpassword=keypassword}.PerformOperation(keyfile,inputFileName,outputFileName,optype,encodingPreference);
                         Console.WriteLine(" Operation was {0}", success? "Successful": "Unsuccessful");
+                    }
+                    else 
+                    {
+                        Console.WriteLine("Something went wrong, program will now exit...");
                     }
                     break;
                 default:
