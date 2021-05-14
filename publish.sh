@@ -12,7 +12,17 @@ cp -r ../../../Scripts/linux ubuntu.16.04-x64/.
 cp -r ../../../Scripts/win10 win10-x64/.
 cp -r ../../../Scripts/linux opensuse-x64/.
 cp -r ../../../Scripts/linux osx-x64/.
-tar -cvf Encryptor-ubuntu.16.04-x64.tar ubuntu.16.04-x64/*
-tar -cvf Encryptor-opensuse-x64.tar opensuse-x64/*
-zip -r Encryptor-win10-x64.zip win10-x64/*
-tar -cvf Encryptor-osx-x64.tar osx-x64/* 
+if ! command -v tar
+then
+	echo "tar not found"
+else
+	tar -cvf Encryptor-ubuntu.16.04-x64.tar ubuntu.16.04-x64/*
+	tar -cvf Encryptor-opensuse-x64.tar opensuse-x64/*
+	tar -cvf Encryptor-osx-x64.tar osx-x64/*
+fi
+if ! command -v zip
+then
+	echo "zip not found"
+else
+	zip -r Encryptor-win10-x64.zip win10-x64/*
+fi

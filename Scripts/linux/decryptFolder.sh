@@ -1,7 +1,12 @@
 #!/bin/bash
 SAVEIFS=$IFS
 IFS=$(echo -en "\n\b")
-ENCRYPTOR_DIR=~/Utils/Encryptor/bin/ubuntu.16.04-x64/publish
+ENCRYPTOR_DIR=../publish
+if [[ $1 == "--help" ]]; then
+	echo "first parameter --d for decryption , --e for encryption"
+	echo "second parameter Input directory"
+	echo "third parameter Key File (Private key for decryption, Public key for encryption)"
+fi
 if [$1 -eq ""]; then
 	echo "Input directory not provided"
 	exit

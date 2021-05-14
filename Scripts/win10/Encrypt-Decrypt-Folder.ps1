@@ -3,33 +3,15 @@
 [Parameter()][string]$InputFolder,
 [Parameter(Mandatory=$false)][string]$FileFilter,
 [Parameter(Mandatory=$false)][bool]$RemoveFilesAfterEncryption,
-[Parameter(Mandatory=$false)][bool]$Base64OutputOnly)
+[Parameter(Mandatory=$false)][bool]$Base64OutputOnly=$true)
 Import-Module Microsoft.Powershell.Security
-#Import-Module System.Windows.Forms
 Add-Type -AssemblyName System.Windows.Forms
 
-$Encrypt_Directory = "C:\hrishi\Encryptor\win10-x64\publish"
+$Encrypt_Directory = "..\publish"
 $filter = "*.enc"
 $remove = $false
-<#
-if( $args[0] -eq "--help")
-{
-    #echo "1st argument --d for Decryption or --e for Encryption"
-    echo "Operation: --d for Decryption or --e for Encryption"
-    #echo "2nd argument location of key file (public for encryption, private for decryption)"
-    echo "KeyFileLocation location of key file (public for encryption, private for decryption)"
-    #echo "3rd argument folder to be encrypted/decrypted"
-    echo "InputFolder folder to be encrypted/decrypted"
-    #echo "4th parameter (Optional) --base64 for decrypting only base64 encoded files"
-    echo "Base64OutputOnly (true/false) for decrypting only base64 encoded files"
-    #echo "5th parameter (Optional) filter to choose specific files to encrypt such as *.pdf, *.doc"
-    echo "FileFilter filter to choose specific files to encrypt such as *.pdf, *.doc"
-    #echo "6th parameter (Optional) --remove will remove the original file from the location after encryption"
-    echo "RemoveFilesAfterEncryption (true/false) will remove the original file from the location after encryption"
-    exit
-}#>
 
-
+echo "NOTE: The script is defaulted to process Base64 output files for Decryption Operation, Base64OutputOnly should be set to false to output binary file"
 if (($KeyFileLocation -eq $null) -or ($KeyFileLocation -eq ""))
 { 
     echo "Key File is required ... Please select Key File"
@@ -64,30 +46,9 @@ if (($InputFolder -eq $null) -or ($InputFolder -eq ""))
     }
 }
 
-#if ($args.Length -ilt 3 ) 
-#{
-#    echo "All requred arguments not provided"
-#    exit
-#}
-#$keyfile = $args[1]
-
-
-
-#if ($args[0] -eq "--d")
 if ($Operation.Trim() -eq "--d")
 {
-   # if ($args.Length -ge 4)
-   # {
-   #     for($i=3;$i -le $args.Length-1;$i++)
-   #     {
-   #         echo $args[$i]
-   #         switch($args[$i]) 
-   #         {
-   #             "--base64" { $filter ="*.enc.base64"; break }
-   #             "--remove" {$remove=$true; break}
-   #         }
-   #     }
-    #}
+
     if ($FileFilter.Trim() -ne "")
     {
         if( $FileFilter -match "\*\.{1}[a-z,A-Z]*$")
@@ -109,7 +70,7 @@ if ($Operation.Trim() -eq "--d")
     $replacefilter = $filter.Substring(1,$filter.Length -1)
     $pvkeyflag = $false
     $pvkeypwd = ""
-    Read-Host -Prompt "Is the Private Key Encrypted" -OutVariable ispvkeyencrypted
+    Read-Host -Prompt "Is the Private Key Encrypted(yes/no)" -OutVariable ispvkeyencrypted
     if (($ispvkeyencrypted -eq "Yes") -or ($ispvkeyencrypted -eq "yes"))
     {
         $pvkeyflag = $true
@@ -127,35 +88,30 @@ if ($Operation.Trim() -eq "--d")
                 
         $outputfilename = $result.FullName.Replace($replacefilter,"")
         $inputfilename = $result.FullName
+        $arguments="--d --k $keyfile --i ""$inputfilename"" --o ""$outputfilename"""
         if ($pvkeyflag)
         {
              $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($pvkeypwd)
              $pvpwd = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-            #echo  "--d --k $keyfile --i ""$inputfilename"" --o ""$outputfilename"" --privatekeypassword ""$pvpwd"""
-            Start-Process -NoNewWindow -Wait -FilePath "$Encrypt_Directory\Encryptor.exe" -ArgumentList "--d --k $keyfile --privatekeypassword ""$pvpwd"" --i ""$inputfilename"" --o ""$outputfilename""" -OutVariable $message
+             if ($Base64OutputOnly)
+             {
+                $inputfilename += ".base64"
+                $arguments = "--d --k $keyfile --privatekeypassword ""$pvpwd"" --base64 --i ""$inputfilename"" --o ""$outputfilename"""
+             }
+             else
+             {
+                $arguments = "--d --k $keyfile --privatekeypassword ""$pvpwd"" --i ""$inputfilename"" --o ""$outputfilename"""
+             }
+
+            #Start-Process -NoNewWindow -Wait -FilePath "$Encrypt_Directory\Encryptor.exe" -ArgumentList $arguments -OutVariable $message
         }
-        else 
-        {
-            Start-Process -NoNewWindow -Wait -FilePath "$Encrypt_Directory\Encryptor.exe" -ArgumentList "--d --k $keyfile --i ""$inputfilename"" --o ""$outputfilename""" -OutVariable $message
-        }
+        Start-Process -NoNewWindow -Wait -FilePath "$Encrypt_Directory\Encryptor.exe" -ArgumentList $arguments -OutVariable $message
         echo $message
         #echo "--d --k $keyfile --i $inputfilename --o $outputfilename"
     }
     exit
 } 
 
-#if ($args.Length -ge 4)
-#{
-#    for($i=3;$i -le $args.Length-1;$i++)
-#    {
-#        echo $args[$i]
-#        switch($args[$i]) 
-#        {
-#            "--remove" {$remove=$true; break}
-#            default {if ($args[$i] -match "\*\."){$filter=$args[$i];} break}
-#        }
-#    }
-#}
 if ($removefilesafterencryption)
 {
     $remove=$true
@@ -181,7 +137,7 @@ if ($operation -eq "--e")
         $inputfilename = $result.FullName
         if ($Base64OutputOnly)
         {
-            -Process -NoNewWindow -Wait -FilePath "$Encrypt_Directory\Encryptor.exe" -ArgumentList "--e --k $keyfile --base64 --i ""$inputfilename"" --o ""$outputfilename"""
+            Start-Process -NoNewWindow -Wait -FilePath "$Encrypt_Directory\Encryptor.exe" -ArgumentList "--e --k $keyfile --base64 --i ""$inputfilename"" --o ""$outputfilename"""
         }
         else
         {
