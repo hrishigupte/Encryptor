@@ -72,7 +72,11 @@ echo "Search file $searchfiles"
 #for fl in `ls -p $1/*.enc | grep -v '/$'`; do
 for fl in `ls -p $searchfiles | grep -v '/$'`; do
 	echo "Decrypting $fl"
-	outfile=`echo $fl | awk -F '.' '{ print "."$NF }'`
+	#outfile=`echo $fl | awk -F '.' '{ print "."$NF }'`
+	outfile=".enc"
+	if [ $bininput -eq 0 ] && [ $base64input -eq 1 ]; then
+		outfile=".enc.base64"	
+	fi
 	out=`echo $fl | sed "s/$outfile//"`
 	echo "out $out"
 	echo "$keytouse"
