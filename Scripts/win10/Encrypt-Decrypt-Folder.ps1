@@ -3,7 +3,7 @@
 [Parameter()][string]$InputFolder,
 [Parameter(Mandatory=$false)][string]$FileFilter,
 [Parameter(Mandatory=$false)][bool]$RemoveFilesAfterEncryption,
-[Parameter(Mandatory=$false)][bool]$Base64OutputOnly=$true)
+[Parameter(Mandatory=$false)][bool]$Base64InputOnly=$false)
 Import-Module Microsoft.Powershell.Security
 Add-Type -AssemblyName System.Windows.Forms
 
@@ -11,7 +11,7 @@ $Encrypt_Directory = "..\publish"
 $filter = "*.enc"
 $remove = $false
 
-echo "NOTE: The script is defaulted to process Base64 output files for Decryption Operation, Base64OutputOnly should be set to false to output binary file"
+echo "NOTE: The script checks if encrypted files are Binary or Base64 encoded and decrypts only Base64 encoded files if they are available"
 if (($KeyFileLocation -eq $null) -or ($KeyFileLocation -eq ""))
 { 
     echo "Key File is required ... Please select Key File"
@@ -48,12 +48,23 @@ if (($InputFolder -eq $null) -or ($InputFolder -eq ""))
 
 if ($Operation.Trim() -eq "--d")
 {
+    $BinaryFiles = $false
+    $Base64Files = $false
+    
+    Get-ChildItem -Path $InputFolder -Filter "*.enc" | Where-Object { if ($_.FullName.ToString() -match ".enc") { $BinaryFiles=$true}}
+    Get-ChildItem -Path $InputFolder -Filter "*.base64" | Where-Object {if ($_.FullName.ToString() -match ".base64"){ $Base64Files=$true}}
+
+    if (($BinaryFiles -eq $false) -and ($Base64Files -eq $true))
+    {
+        $Base64InputOnly = $true
+    }
+        
 
     if ($FileFilter.Trim() -ne "")
     {
-        if( $FileFilter -match "\*\.{1}[a-z,A-Z]*$")
+        if($FileFilter -match "\*\.{1}[a-z,A-Z]*$")
         {
-            if ($Base64OutputOnly)
+            if ($Base64InputOnly)
             {
                 $filter = "$FileFilter.enc.base64"
             }
@@ -63,7 +74,14 @@ if ($Operation.Trim() -eq "--d")
             }
         }
     }
-    
+    else 
+    {
+        if ($Base64InputOnly)
+        {
+            $filter = "*.enc.base64"
+        }
+    }
+
     echo "Filter to be applied :$filter"
     echo "Operation: $Operation"
     $index = $filter.LastIndexOf(".")
@@ -78,50 +96,45 @@ if ($Operation.Trim() -eq "--d")
     }
 
     echo "Starting Decryption process"
-    #foreach ($result in Get-ChildItem -Path $args[2] -File -Recurse -Filter $filter)
+   
     foreach ($result in Get-ChildItem -Path $inputfolder -File -Recurse -Filter $filter)
     {
         echo "Decrypting $result"
-        #echo "$pvkeyflag"
-       
-        #echo $pvpwd
-                
         $outputfilename = $result.FullName.Replace($replacefilter,"")
         $inputfilename = $result.FullName
         $arguments="--d --k $keyfile --i ""$inputfilename"" --o ""$outputfilename"""
+        if ($Base64InputOnly)
+        {
+            $arguments="--d --k $keyfile --base64 --i ""$inputfilename"" --o ""$outputfilename"""
+        }
         if ($pvkeyflag)
         {
              $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($pvkeypwd)
              $pvpwd = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
-             if ($Base64OutputOnly)
+             if ($Base64InputOnly)
              {
-                $inputfilename += ".base64"
                 $arguments = "--d --k $keyfile --privatekeypassword ""$pvpwd"" --base64 --i ""$inputfilename"" --o ""$outputfilename"""
              }
              else
              {
                 $arguments = "--d --k $keyfile --privatekeypassword ""$pvpwd"" --i ""$inputfilename"" --o ""$outputfilename"""
              }
-
-            #Start-Process -NoNewWindow -Wait -FilePath "$Encrypt_Directory\Encryptor.exe" -ArgumentList $arguments -OutVariable $message
         }
+        
         Start-Process -NoNewWindow -Wait -FilePath "$Encrypt_Directory\Encryptor.exe" -ArgumentList $arguments -OutVariable $message
         echo $message
-        #echo "--d --k $keyfile --i $inputfilename --o $outputfilename"
     }
     exit
 } 
 
-if ($removefilesafterencryption)
+if ($RemoveFilesAfterEncryption)
 {
     $remove=$true
 }
 
-#if ($args[0] -eq "--e")
 if ($operation -eq "--e")
 {
     echo "Starting Encryption process"
-    #foreach ($result in Get-ChildItem -Path $args[2] -File -Recurse -Filter $filter)
     if( $FileFilter -match "\*\.{1}[a-z,A-Z]*$")
     {
         $filter = $FileFilter
@@ -135,28 +148,13 @@ if ($operation -eq "--e")
         echo "Encrypting $result"
         $outputfilename = $result.FullName + ".enc"
         $inputfilename = $result.FullName
-        if ($Base64OutputOnly)
-        {
-            Start-Process -NoNewWindow -Wait -FilePath "$Encrypt_Directory\Encryptor.exe" -ArgumentList "--e --k $keyfile --base64 --i ""$inputfilename"" --o ""$outputfilename"""
-        }
-        else
-        {
-            Start-Process -NoNewWindow -Wait -FilePath "$Encrypt_Directory\Encryptor.exe" -ArgumentList "--e --k $keyfile --i ""$inputfilename"" --o ""$outputfilename"""
-        }
+        Start-Process -NoNewWindow -Wait -FilePath "$Encrypt_Directory\Encryptor.exe" -ArgumentList "--e --k $keyfile --i ""$inputfilename"" --o ""$outputfilename"""
         if ($remove)
         {
             echo "Removing " + $result.FullName
             Remove-Item $result.FullName
 
         }
-        #echo "--e --k $keyfile --i $inputfilename --o $outputfilename"
     }
 
-
 }
-
-Function TestKeyPath()
-{
-   
-}
-#Start-Process -FilePath C:\hrishi\Encryptor\win10-x64\Encryptor.exe -ArgumentList $args
