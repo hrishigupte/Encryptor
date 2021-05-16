@@ -43,6 +43,7 @@ searchfiles="$1/$binsearchfiles"
 
 base64input=0
 bininput=0
+base64pref=0
 
 lastchar=$(echo ${1: -1})
 #echo $lastchar
@@ -75,16 +76,25 @@ for fl in `ls -p $searchfiles | grep -v '/$'`; do
 	#outfile=`echo $fl | awk -F '.' '{ print "."$NF }'`
 	outfile=".enc"
 	if [ $bininput -eq 0 ] && [ $base64input -eq 1 ]; then
-		outfile=".enc.base64"	
+		outfile=".enc.base64"
+	 	base64pref=1		
 	fi
 	out=`echo $fl | sed "s/$outfile//"`
 	echo "out $out"
 	echo "$keytouse"
-	if [ \( "$ans" = 'Y' \) -o \( "$ans" = 'y' \) ]; then 
-		$ENCRYPTOR_DIR/Encryptor --d --k $keytouse --privatekeypassword $pvkeypasswd --i $fl --o $out
+	if [ \( "$ans" = 'Y' \) -o \( "$ans" = 'y' \) ]; then
+		if [ $base64pref -eq 1 ]; then
+			$ENCRYPTOR_DIR/Encryptor --d --k $keytouse --base64 --privatekeypassword $pvkeypasswd --i $fl --o $out
+		else
+			$ENCRYPTOR_DIR/Encryptor --d --k $keytouse --privatekeypassword $pvkeypasswd --i $fl --o $out
+		fi
 	else
-		echo "key is not decrypted"	
-		$ENCRYPTOR_DIR/Encryptor --d --k $keytouse --i $fl --o $out
+		echo "key is not encrypted"
+		if [ $base64pref -eq 1 ]; then
+			$ENCRYPTOR_DIR/Encryptor --d --k $keytouse --base64 --i $fl --o $out
+		else	
+			$ENCRYPTOR_DIR/Encryptor --d --k $keytouse --i $fl --o $out
+		fi
 	fi	
 done
 if [ -f $TEMP_UNENCRYPTED_FILE ]; then
