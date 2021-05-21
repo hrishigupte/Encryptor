@@ -28,10 +28,10 @@ namespace Encryptor
                 Console.WriteLine("Optional parameter to be used with Decryption Operation for encrypted Private Key --privatekeypassword [Private Key Password]");
                 return;
             }
-            foreach(string s in args)
+            /* foreach(string s in args)
             {
                 Console.WriteLine(s);
-            }
+            } */
             
             ParamNameConstantsEnum optype = ParamNameConstants.GetParamType(args[0]);
             switch (optype)
