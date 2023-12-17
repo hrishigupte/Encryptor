@@ -54,11 +54,16 @@ if ($Operation.Trim() -eq "--d")
     Get-ChildItem -Path $InputFolder -Filter "*.enc" | Where-Object { if ($_.FullName.ToString() -match ".enc") { $BinaryFiles=$true}}
     Get-ChildItem -Path $InputFolder -Filter "*.base64" | Where-Object {if ($_.FullName.ToString() -match ".base64"){ $Base64Files=$true}}
 
-    if (($BinaryFiles -eq $false) -and ($Base64Files -eq $true))
+    if ($Base64Files -eq $true)
     {
         $Base64InputOnly = $true
     }
-        
+    
+    if (($BinaryFiles -ne $true) -and ($Base64InputOnly -ne $true))
+    {
+        echo "No input files found...exiting"
+        exit
+    }    
 
     if ($FileFilter.Trim() -ne "")
     {
